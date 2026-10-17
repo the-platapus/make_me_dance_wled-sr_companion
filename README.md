@@ -4,7 +4,7 @@
 
 **O-LED** (`make_me_dance_wled-sr_companion`) turns an **ESP32** + **128x64 SSD1306 I2C OLED** into a standalone, sound-reactive **WLED-SR** companion display.
 
-It listens to live **WLED Audio Sync v2 (`00002`)** packets over UDP port `11988` (unicast + `239.0.0.1` multicast), runs 5 demoscene/WLED visualizers with **17-shade 4x4 Ordered Bayer dithering**, hosts its own dark-mode Web UI, and pairs over Wi-Fi with a real ESP8266 WLED-SR light strip (**"Tuub layt"**) so you can watch and control your room lights right from a postage-stamp screen.
+It listens to live **WLED Audio Sync v2 (`00002`)** packets over UDP port `11988` (unicast + `239.0.0.1` multicast), runs 5 demoscene/WLED visualizers with **17-shade 4x4 Ordered Bayer dithering**, hosts its own dark-mode Web UI, and pairs over Wi-Fi with your WLED light strip (Tuub layt in my case) so you can watch and control your room lights right from a postage-stamp screen.
 
 ```text
    +------------------------------------------+
