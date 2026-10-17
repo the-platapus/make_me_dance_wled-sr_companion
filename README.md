@@ -1,4 +1,4 @@
-# O-LED // When Your OLED Thinks It's a WLED Strip
+# // When Your OLED Thinks It's a WLED Strip
 
 > *"What if WLED could 'WLED'... on a tiny 128x64 1-bit OLED?"*
 
