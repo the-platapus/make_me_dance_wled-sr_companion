@@ -1,0 +1,20 @@
+# ESP-IDF build artifacts
+build/
+sdkconfig.old
+
+# Local Wi-Fi & device secrets (keep off GitHub!)
+src/secrets.h
+
+# Flasher temporary slices & binaries
+*.bin
+*.elf
+*.map
+*.log
+/tmp_*
+
+# Editor / OS junk
+.vscode/
+.idea/
+.DS_Store
+*~
+*.swp
