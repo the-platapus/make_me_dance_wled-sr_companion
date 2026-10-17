@@ -1,0 +1,81 @@
+name: Build Custom Firmware (.bin)
+
+on:
+  workflow_dispatch:
+    inputs:
+      wifi_ssid:
+        description: "Your 2.4GHz Wi-Fi SSID (leave blank to use WIFI_SSID repo secret)"
+        required: false
+        default: ""
+      wifi_password:
+        description: "Your Wi-Fi Password (leave blank to use WIFI_PASS repo secret)"
+        required: false
+        default: ""
+      tuub_layt_ip:
+        description: "Companion WLED-SR IP address"
+        required: false
+        default: "192.168.1.100"
+
+jobs:
+  build-firmware:
+    name: Compile ESP32 Firmware (ESP-IDF v4.4)
+    runs-on: ubuntu-latest
+    container:
+      image: espressif/idf:release-v4.4
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Generate src/secrets.h from inputs or repository secrets
+        env:
+          INPUT_SSID: ${{ github.event.inputs.wifi_ssid }}
+          INPUT_PASS: ${{ github.event.inputs.wifi_password }}
+          INPUT_IP: ${{ github.event.inputs.tuub_layt_ip }}
+          SECRET_SSID: ${{ secrets.WIFI_SSID }}
+          SECRET_PASS: ${{ secrets.WIFI_PASS }}
+          SECRET_IP: ${{ secrets.TUUB_LAYT_IP }}
+        run: |
+          python3 - << 'PY'
+          import os
+
+          ssid = os.environ.get("INPUT_SSID") or os.environ.get("SECRET_SSID") or "YOUR_WIFI_SSID"
+          pw   = os.environ.get("INPUT_PASS") or os.environ.get("SECRET_PASS") or "YOUR_WIFI_PASSWORD"
+          ip   = os.environ.get("INPUT_IP")   or os.environ.get("SECRET_IP")   or "192.168.1.100"
+
+          def esc(s: str) -> str:
+              return s.replace("\\", "\\\\").replace('"', '\\"')
+
+          with open("src/secrets.h", "w", encoding="utf-8") as f:
+              f.write("#pragma once\n")
+              f.write(f'#define WIFI_SSID_SECRET    "{esc(ssid)}"\n')
+              f.write(f'#define WIFI_PASS_SECRET    "{esc(pw)}"\n')
+              f.write(f'#define TUUB_LAYT_IP_SECRET "{esc(ip)}"\n')
+
+          print(f"[OK] Generated src/secrets.h (SSID={ssid!r}, TUUB_LAYT_IP={ip!r})")
+          PY
+
+      - name: Compile Firmware & Merge Factory Binary
+        run: |
+          . "$IDF_PATH/export.sh"
+          idf.py build
+          esptool.py --chip esp32 merge_bin \
+            -o build/oled_wled_factory_0x0.bin \
+            --flash_mode dio --flash_freq 40m --flash_size 4MB \
+            0x1000 build/bootloader/bootloader.bin \
+            0x8000 build/partition_table/partition-table.bin \
+            0x10000 build/oled_wled.bin
+          mkdir -p dist
+          cp build/oled_wled_factory_0x0.bin dist/
+          cp build/oled_wled.bin dist/
+          cp build/bootloader/bootloader.bin dist/
+          cp build/partition_table/partition-table.bin dist/
+          cp flash.sh dist/
+          (cd dist && sha256sum *.bin > SHA256SUMS.txt)
+
+      - name: Upload Compiled Firmware Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: oled_wled_custom_firmware
+          path: dist/*
+          retention-days: 30

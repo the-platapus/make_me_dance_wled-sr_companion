@@ -79,22 +79,35 @@ Open the ESP32's IP address in any browser for a live dashboard:
 
 ---
 
-## Wi-Fi Configuration & Building
+## How to Compile Your Own `.bin` (2 Easy Ways)
 
-1. Create `src/secrets.h` (gitignored so your Wi-Fi password stays off GitHub):
-   ```cpp
-   #pragma once
-   #define WIFI_SSID_SECRET "YourWiFiName"
-   #define WIFI_PASS_SECRET "YourWiFiPassword"
-   #define TUUB_LAYT_IP_SECRET "192.168.1.100" // IP of your WLED-SR strip
-   ```
-2. Build and flash using the included chunked flasher script:
-   ```bash
-   ./flash.sh
-   ```
+Because Wi-Fi credentials and your companion WLED-SR IP are compiled directly into the firmware, you can build your personalized `.bin` in one command locally **or** in the cloud using GitHub Actions without installing anything on your PC.
+
+### Option A: One-Command Local Build (`./build.sh`)
+You only need Docker (or a local ESP-IDF `v4.4` install). Run:
+```bash
+# 1. Interactive setup + compile (prompts for Wi-Fi SSID, Password & WLED-SR IP on first run):
+./build.sh
+
+# 2. Or compile AND flash directly to your ESP32 in one go:
+./build.sh --flash /dev/ttyUSB0
+
+# Need to change your Wi-Fi or WLED IP later?
+./build.sh --reconfigure
+```
+This saves your settings to a gitignored `src/secrets.h` (or you can copy `src/secrets.h.example` -> `src/secrets.h` manually) and outputs:
+- `build/oled_wled_factory_0x0.bin` — **All-in-one factory binary** (flash at `0x0` using any web flasher like [ESP Web Tools / esp.huhn.me](https://esp.huhn.me/) or `esptool.py write_flash 0x0 build/oled_wled_factory_0x0.bin`).
+- `build/oled_wled.bin` — **App-only binary** (flash at `0x10000`).
+
+### Option B: Zero-Install GitHub Actions Cloud Builder
+Don't want to install Docker or ESP-IDF on your computer? Let GitHub's servers compile your `.bin` for free:
+1. **Fork** this repository on GitHub.
+2. Go to the **Actions** tab in your fork and select **"Build Custom Firmware (.bin)"**.
+3. Click **"Run workflow"**, enter your **2.4GHz Wi-Fi SSID**, **Wi-Fi Password**, and **Companion WLED-SR IP** (or store them privately in your fork's *Settings -> Secrets and variables -> Actions* as `WIFI_SSID`, `WIFI_PASS`, and `TUUB_LAYT_IP`).
+4. When the workflow finishes (~90 seconds), download the **`oled_wled_custom_firmware`** zip from the bottom of the workflow summary page and flash `oled_wled_factory_0x0.bin` at offset `0x0`!
 
 > **Why does `flash.sh` flash in 128 KB slices?**
-> Because life is too short to watch a sketchy micro-USB cable fail at 94% and restart from 0%. `flash.sh` compiles via Docker (`esp-idf v4.4.8` + `ccache`) and writes `oled_wled.bin` in sector-aligned `128 KB` (`0x20000`) chunks at `115200` baud with automatic per-slice retry.
+> Because life is too short to watch a sketchy micro-USB cable fail at 94% and restart from 0%. `flash.sh` writes `oled_wled.bin` in sector-aligned `128 KB` (`0x20000`) chunks at `115200` baud with automatic per-slice retry.
 
 ---
 
